@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Echo Wall Clock simulator</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#1c1e24; --mut:#6b7080; --card:#f2f3f6; --line:#d9dbe2; --acc:#2563eb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1116; --fg:#e8eaf0; --mut:#9aa0b0; --card:#1a1d25; --line:#2b2f3a; --acc:#6ea0ff; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.45 -apple-system,Helvetica,Arial,sans-serif; }
+  main { max-width:860px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:1.4rem; margin:0 0 4px; } p.sub { color:var(--mut); margin:0 0 20px; }
+  .grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; align-items:start; }
+  @media (max-width:700px) { .grid { grid-template-columns:1fr; } }
+  #face svg { width:100%; height:auto; display:block; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:8px 0; }
+  button, input { font:inherit; color:inherit; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:6px 12px; }
+  button { cursor:pointer; } button:hover { border-color:var(--acc); } button:disabled { opacity:.5; cursor:default; }
+  button.primary { background:var(--acc); color:#fff; border-color:var(--acc); }
+  input { width:4.5em; } label { color:var(--mut); font-size:.9rem; }
+  ul { list-style:none; padding:0; margin:12px 0 0; } li { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--line); }
+  li .t { font-variant-numeric:tabular-nums; font-weight:600; } li .s { color:var(--mut); font-size:.85rem; margin-left:6px; }
+  .note { color:var(--mut); font-size:.85rem; margin-top:14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Echo Wall Clock simulator</h1>
+  <p class="sub">Add timers and watch the LED ring the way the real clock draws them. Nothing here talks to a clock.</p>
+  <div class="grid">
+    <div id="face" aria-live="polite"></div>
+    <div class="panel">
+      <strong>Set a timer</strong>
+      <div class="row">
+        <label>min <input id="min" type="number" min="0" max="999" value="5"></label>
+        <label>sec <input id="sec" type="number" min="0" max="59" value="0"></label>
+        <button id="add" class="primary">Start</button>
+      </div>
+      <div class="row"><label>Quick:</label>
+        <button data-s="15">15 s</button><button data-s="60">1 min</button><button data-s="300">5 min</button>
+        <button data-s="1200">20 min</button><button data-s="5400">90 min</button>
+      </div>
+      <ul id="list"></ul>
+      <div class="note" id="msg"></div>
+      <div class="note">Up to 4 timers. Paused timers disappear from the clock, because a real Echo removes the alert on pause. The ring pulses once when a timer ends, then goes dark.</div>
+    </div>
+  </div>
+</main>
+<script src="clocksim.js"></script>
+<script>
+  const MAX = 4, RING_MS = 10000;
+  let timers = [], nextId = 1, ringUntil = 0, ringKind = null;   // {id, end (ms) | left (s) if paused, paused}
+  const $ = id => document.getElementById(id);
+  const fmt = s => { s = Math.max(0, Math.ceil(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
+  const left = t => t.paused ? t.left : (t.end - Date.now()) / 1000;
+
+  function add(sec) {
+    if (sec <= 0) return;
+    if (timers.length >= MAX) { $("msg").textContent = "Four timers is the limit."; return; }
+    $("msg").textContent = "";
+    timers.push({ id: nextId++, end: Date.now() + sec * 1000, paused: false });
+    draw(true);
+  }
+  $("add").onclick = () => add((+$("min").value || 0) * 60 + (+$("sec").value || 0));
+  document.querySelectorAll("[data-s]").forEach(b => b.onclick = () => add(+b.dataset.s));
+
+  function listUi() {
+    const ul = $("list"); ul.innerHTML = "";
+    timers.forEach(t => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span><span class="t">${fmt(left(t))}</span><span class="s">${t.paused ? "paused" : "running"}</span></span><span></span>`;
+      const box = li.lastChild;
+      const mk = (txt, fn) => { const b = document.createElement("button"); b.textContent = txt; b.onclick = fn; box.appendChild(b); box.appendChild(document.createTextNode(" ")); };
+      mk(t.paused ? "Resume" : "Pause", () => {
+        if (t.paused) { t.end = Date.now() + t.left * 1000; t.paused = false; } else { t.left = left(t); t.paused = true; }
+        draw(true); });
+      mk("Cancel", () => { timers = timers.filter(x => x !== t); draw(true); });
+      ul.appendChild(li);
+    });
+  }
+
+  let lastKey = "";
+  function draw(force) {
+    const now = new Date(), ringing = Date.now() < ringUntil;
+    const view = timers.map(t => ({ remaining: left(t), paused: t.paused }));
+    const key = JSON.stringify([ringing, ringing ? 0 : view.map(v => [Math.ceil(v.remaining), v.paused]), now.getMinutes()]);
+    if (key !== lastKey || force) {
+      lastKey = key;
+      $("face").innerHTML = ClockSim.renderSvg(view, { now: [now.getHours(), now.getMinutes()], ringing, animate: ringing, ghostPaused: true });
+      listUi();
+    }
+  }
+
+  setInterval(() => {
+    const finished = timers.filter(t => !t.paused && left(t) <= 0);
+    if (finished.length) {
+      timers = timers.filter(t => !finished.includes(t));
+      ringUntil = Date.now() + RING_MS;      // a real Echo sends "active" once; the clock pulses ~10 s
+      lastKey = "";
+    }
+    draw(false);
+  }, 250);
+  draw(true);
+</script>
+</body>
+</html>

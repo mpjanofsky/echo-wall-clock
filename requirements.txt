@@ -1,0 +1,4 @@
+# Linux/BlueZ tools (pi_echo.py, fake_clock.py). Install from apt, not pip:
+#   sudo apt install python3-dbus python3-gi
+# agt.py and examples/ need only the Python 3.9+ standard library.
+# tools/macos/ needs: bleak, pyobjc-framework-IOBluetooth
