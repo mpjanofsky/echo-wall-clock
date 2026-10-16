@@ -25,9 +25,9 @@ Other firmware versions are untested; see [CONTRIBUTING.md](CONTRIBUTING.md).
 - [`clocksim.py`](clocksim.py): face simulator. Draws the 60-LED ring and hands as SVG from a list of
   timers (idle, one, several, paused, done); stdlib only. `python3 clocksim.py --out docs/sim` writes
   the example scenes, and `render_svg()` can be called on every timer change for a live preview.
-- [`web/`](web): interactive simulator page (`index.html`) and a JS port of the renderer
-  (`clocksim.js`); `python3 tests/test_parity.py` checks it matches `clocksim.py`. Serve the folder
-  (`python3 -m http.server -d web`) or publish it with GitHub Pages.
+- [`web/`](web): interactive simulator page ([try it live](https://mpjanofsky.github.io/echo-wall-clock/)) and a JS port of the renderer
+  (`clocksim.js`); `python3 tests/test_parity.py` checks it matches `clocksim.py`. To run it locally,
+  serve the folder (`python3 -m http.server -d web`).
 - [`examples/set_timer.py`](examples/set_timer.py): smallest use of `agt.py`; builds the frames, no Bluetooth needed.
 - [`tools/`](tools): `extract_response.py`, plus early macOS recon scripts in `tools/macos/`.
   [`scripts/`](scripts): Pi helper scripts (install dir is `$CLOCK_DIR`, default `~/clock`).
