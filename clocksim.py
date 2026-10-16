@@ -229,9 +229,9 @@ def story_frames() -> list[tuple[list[Timer], bool, tuple[int, int], float]]:
     while s < STORY_END:
         if s == 330:  # timer A ends: a burst of full-ring pulses until it is stopped (shortened)
             for _ in range(3):
-                frames.append([[], True, hands(s), 0, 0.45])
-                frames.append([[], False, hands(s), 0, 0.35])
-            frames.append([[], True, hands(s), 0, 0.45])
+                frames.append([[], True, hands(s), 0, 0.7])
+                frames.append([[], False, hands(s), 0, 0.5])
+            frames.append([[], True, hands(s), 0, 0.7])
             s, last = 340, None
             continue
         ts = _story_timers(s)
@@ -247,9 +247,9 @@ def story_frames() -> list[tuple[list[Timer], bool, tuple[int, int], float]]:
         if fixed is not None:
             hold = fixed
         elif all(t.paused for t in ts):          # idle or paused: give the eye a moment
-            hold = max(1.0, min(1.5, sim * 0.02))
+            hold = max(1.5, min(2.5, sim * 0.04))
         else:
-            hold = max(0.12, min(1.2, sim * 0.0085))
+            hold = max(0.3, min(2.0, sim * 0.017))
         out.append((ts, ringing, h, hold))
     return out
 

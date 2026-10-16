@@ -1,0 +1,6 @@
+Echo Wall Clock protocol and tools
+Copyright 2026 Mike Janofsky
+
+Unofficial; not affiliated with or endorsed by Amazon. Alexa and Echo are Amazon trademarks.
+The code was written from observed behavior and Amazon's public protocol documentation; no Amazon
+sample code is included.

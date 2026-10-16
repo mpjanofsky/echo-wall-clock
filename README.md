@@ -58,4 +58,4 @@ code was written from observed behavior and Amazon's public protocol documentati
 code is included. Use at your own risk; this talks to your own device only. Do not publish your
 clock's serial number or device token (they appear in its `Discover.Response`).
 
-Licensed under the MIT License.
+Code is Apache-2.0 (see [LICENSE](LICENSE) and [NOTICE](NOTICE)).
