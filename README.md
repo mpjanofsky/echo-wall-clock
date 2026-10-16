@@ -1,3 +1,9 @@
+<p align="center">
+<a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/mpjanofsky/echo-wall-clock?style=for-the-badge"></a>
+<a href="https://github.com/mpjanofsky/echo-wall-clock/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/mpjanofsky/echo-wall-clock?style=for-the-badge"></a>
+<a href="https://mpjanofsky.github.io/echo-wall-clock/"><img alt="Live demo: clock simulator" src="https://img.shields.io/badge/live%20demo-clock%20simulator-2f81f7?style=for-the-badge"></a>
+</p>
+
 # Echo Wall Clock, without the Echo
 
 ![Simulated clock face running through a timer demo](docs/sim/demo-loop.svg)
