@@ -193,37 +193,90 @@ SCENES = {
 }
 
 
-# One frame per step; the loop plays them at FRAME_S seconds each (time is sped up).
-LOOP = (
-    [([], False)] * 2
-    + [([Timer(m * 60)], False) for m in (5, 4, 3, 2)]
-    + [([Timer(60), Timer(17 * 60)], False), ([Timer(45), Timer(17 * 60)], False),
-       ([Timer(30), Timer(17 * 60)], False), ([Timer(15), Timer(17 * 60)], False),
-       ([Timer(5), Timer(17 * 60)], False)]
-    + [([], True)] * 3
-    + [([Timer(17 * 60)], False), ([Timer(16 * 60), Timer(40 * 60)], False)]
-    + [([Timer(15 * 60, paused=True), Timer(40 * 60)], False)]
-)
-FRAME_S = 1.2
+# The README demo is one continuous story, simulated second by second and then compressed for
+# playback: only moments where the clock's display changes become frames, and each is held in
+# proportion to how long it lasted (clamped, so the final-minute countdown still reads).
+START = (10, 10)   # the hands' starting time
+STORY_END = 520    # simulated seconds; the story ends with the clock idle again, so it loops
+
+
+def _story_timers(s: int) -> list[Timer]:
+    """The timers the clock shows `s` seconds into the story.
+
+    0:30 timer A (5 min) starts; 2:30 timer B (17 min) starts; A ends at 5:30 and rings until it is
+    stopped at 5:40; B is paused at 6:40, resumed at 7:40 and cancelled at 8:40.
+    """
+    timers = []
+    if 30 <= s < 330:
+        timers.append(Timer(330 - s))
+    if 150 <= s < 400:
+        timers.append(Timer(1170 - s))
+    elif 400 <= s < 460:
+        timers.append(Timer(770, paused=True))
+    elif 460 <= s < 520:
+        timers.append(Timer(1230 - s))
+    return timers
+
+
+def story_frames() -> list[tuple[list[Timer], bool, tuple[int, int], float]]:
+    """(timers, ringing, hands, seconds on screen) for each frame of the demo."""
+    def hands(s: int) -> tuple[int, int]:
+        m = START[1] + s // 60
+        return START[0] + m // 60, m % 60
+
+    frames = []  # [timers, ringing, hands, simulated seconds, fixed hold or None]
+    last, s = None, 0
+    while s < STORY_END:
+        if s == 330:  # timer A ends: a burst of full-ring pulses until it is stopped (shortened)
+            for _ in range(3):
+                frames.append([[], True, hands(s), 0, 0.45])
+                frames.append([[], False, hands(s), 0, 0.35])
+            frames.append([[], True, hands(s), 0, 0.45])
+            s, last = 340, None
+            continue
+        ts = _story_timers(s)
+        key = (tuple(led_states(ts)), hands(s))
+        if key == last:
+            frames[-1][3] += 1
+        else:
+            frames.append([ts, False, hands(s), 1, None])
+            last = key
+        s += 1
+    out = []
+    for ts, ringing, h, sim, fixed in frames:
+        if fixed is not None:
+            hold = fixed
+        elif all(t.paused for t in ts):          # idle or paused: give the eye a moment
+            hold = max(1.0, min(1.5, sim * 0.02))
+        else:
+            hold = max(0.12, min(1.2, sim * 0.0085))
+        out.append((ts, ringing, h, hold))
+    return out
 
 
 def render_loop_svg(background: bool = True) -> str:
-    """One self-playing SVG that loops through LOOP (for the README; SMIL, no scripts)."""
-    frames = [render_svg(t, ringing=r, background=background, title="Echo Wall Clock demo")
-              for t, r in LOOP]
-    head, _, rest = frames[0].partition("<!--leds-->")
+    """One self-playing SVG of story_frames() (for the README; SMIL, no scripts)."""
+    frames = story_frames()
+    svgs = [render_svg(t, ringing=r, now=h, background=background, title="Echo Wall Clock demo")
+            for t, r, h, _ in frames]
+    head, _, rest = svgs[0].partition("<!--leds-->")
     _, _, tail = rest.partition("<!--/leds-->")
-    n, total = len(frames), FRAME_S * len(frames)
-    groups = []
-    for i, f in enumerate(frames):
-        leds = f.partition("<!--leds-->")[2].partition("<!--/leds-->")[0]
-        times = sorted({0.0, i / n, (i + 1) / n, 1.0})
-        vals = ";".join("1" if i / n <= t < (i + 1) / n else "0" for t in times)
+    button, _, tail = tail.strip().partition("\n")          # the hands sit between button and hub
+    hub = tail.strip().split("\n")[-2]
+    total = sum(f[3] for f in frames)
+    t0, leds_groups, hand_groups = 0.0, [], []
+    for svg, (_, _, _, hold) in zip(svgs, frames):
+        a, b = t0 / total, (t0 + hold) / total
+        t0 += hold
+        times = sorted({0.0, a, b, 1.0})
+        vals = ";".join("1" if a <= t < b else "0" for t in times)
         keys = ";".join(f"{t:.5f}" for t in times)
-        groups.append(f'<g opacity="0"><animate attributeName="opacity" calcMode="discrete" '
-                      f'dur="{total:.1f}s" repeatCount="indefinite" keyTimes="{keys}" '
-                      f'values="{vals}"/>{leds}</g>')
-    return head + "".join(groups) + tail
+        anim = (f'<animate attributeName="opacity" calcMode="discrete" dur="{total:.2f}s" '
+                f'repeatCount="indefinite" keyTimes="{keys}" values="{vals}"/>')
+        leds_groups.append(f'<g opacity="0">{anim}{svg.partition("<!--leds-->")[2].partition("<!--/leds-->")[0]}</g>')
+        h_lines = svg.partition("<!--/leds-->")[2].strip().split("\n")[1:3]
+        hand_groups.append(f'<g opacity="0">{anim}{"".join(h_lines)}</g>')
+    return head + "".join(leds_groups) + button + "\n" + "".join(hand_groups) + "\n" + hub + "\n</svg>\n"
 
 
 def write_scenes(out_dir: str, background: bool = True) -> list[str]:
