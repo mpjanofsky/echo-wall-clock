@@ -7,6 +7,8 @@ from anything that speaks Bluetooth Classic: set the time, show timers on the LE
 timers/alarms/reminders, and light the notification LED. No Echo required. It runs locally and never
 touches Amazon's servers.
 
+**[Try the clock simulator](https://mpjanofsky.github.io/echo-wall-clock/)** in your browser.
+
 ## Tested hardware
 
 | Thing | Version |
