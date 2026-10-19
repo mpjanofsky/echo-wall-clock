@@ -13,7 +13,7 @@ Bluetooth adapter should work.
    sudo python3 pi_echo.py --address CC:9E:A2:xx:xx:xx --fresh --timer 3 --listen 200
    ```
 
-   Find the address with `sudo btmgmt find -b` or in your phone's Bluetooth scan (name `EchoWallClk...`).
+   Find the address with `sudo btmgmt find -b` or in your phone's Bluetooth scan (name `EchoWallClk...`, or `EWCMickeyMouse...` on the Mickey Mouse Edition).
    Use `--tz` for your time zone. The clock shows local wall-clock time and ignores the offset.
 4. Afterwards the clock stays bonded. Reconnect any time without pairing mode by omitting `--fresh`.
    The clock only talks to one partner, so pairing it to an Echo again takes it away from the Pi.

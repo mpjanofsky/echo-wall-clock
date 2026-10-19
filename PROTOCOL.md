@@ -23,7 +23,7 @@ running BlueZ 5.82 acting as both a fake Echo and a fake clock.
 |---|---|
 | Transport | Bluetooth Classic (BR/EDR). Nothing on BLE. |
 | BD address | `CC:9E:A2:xx:xx:xx` (OUI = Amazon Technologies) |
-| Name | `EchoWallClk10U` (suffix likely varies per unit) |
+| Name | `EchoWallClk10U` (suffix likely varies per unit). The Mickey Mouse Edition advertises `EWCMickeyMouse05B` instead (reported by a user; the protocol on that clock is untested here) |
 | Class of device | `0x001f00` (uncategorized) |
 | Pairing | SSP "Just Works" (IO capability NoInputNoOutput). No PIN, no secret. |
 | Link security | Encrypted (E0) after pairing; key size 16 |
